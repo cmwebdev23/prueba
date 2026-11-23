@@ -24,5 +24,14 @@ export async function GET(req: Request) {
       out.ai = { ok: false, error: String(e).slice(0, 400) };
     }
   }
+  if (new URL(req.url).searchParams.get("models") === "1" && process.env.GEMINI_API_KEY) {
+    const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", {
+      headers: { "x-goog-api-key": process.env.GEMINI_API_KEY },
+    });
+    const data = (await r.json()) as { models?: { name: string; supportedGenerationMethods?: string[] }[] };
+    out.models = (data.models ?? [])
+      .filter((m) => m.supportedGenerationMethods?.includes("generateContent"))
+      .map((m) => m.name.replace("models/", ""));
+  }
   return NextResponse.json(out, { headers: { "cache-control": "no-store" } });
 }
