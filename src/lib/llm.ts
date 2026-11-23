@@ -31,9 +31,19 @@ const TIMEOUT_MS = 55_000;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-async function post(url: string, headers: Record<string, string>, body: unknown): Promise<unknown> {
+class ApiError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message);
+  }
+}
+
+async function post(
+  url: string,
+  headers: Record<string, string>,
+  body: unknown,
+  delays = [2000, 5000, 0]
+): Promise<unknown> {
   // Reintenta los errores temporales (saturación o límite de peticiones del plan gratuito).
-  const delays = [2000, 5000, 0];
   for (let attempt = 0; ; attempt++) {
     const res = await fetch(url, {
       method: "POST",
@@ -45,7 +55,7 @@ async function post(url: string, headers: Record<string, string>, body: unknown)
     if (res.ok) return JSON.parse(text);
     const transient = res.status === 429 || res.status >= 500;
     if (!transient || attempt >= delays.length - 1) {
-      throw new Error(`La API de IA respondió ${res.status}: ${text.slice(0, 300)}`);
+      throw new ApiError(`La API de IA respondió ${res.status}: ${text.slice(0, 300)}`, res.status);
     }
     await sleep(delays[attempt]);
   }
@@ -53,17 +63,41 @@ async function post(url: string, headers: Record<string, string>, body: unknown)
 
 async function callText(provider: Exclude<Provider, "mock">, system: string, user: string): Promise<string> {
   if (provider === "gemini") {
-    const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
-    const data = (await post(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-      { "x-goog-api-key": process.env.GEMINI_API_KEY! },
-      {
-        systemInstruction: { parts: [{ text: system }] },
-        contents: [{ role: "user", parts: [{ text: user }] }],
-        generationConfig: { temperature: 0.2, responseMimeType: "application/json" },
+    // Si un modelo está saturado o no disponible, se prueba el siguiente.
+    const models = [
+      ...new Set([
+        process.env.GEMINI_MODEL || "gemini-3.8-flash",
+        ...(process.env.GEMINI_FALLBACK_MODELS || "gemini-3.7-flash,gemini-3.5-flash,gemini-flash-latest,gemini-2.5-flash")
+          .split(",")
+          .map((m) => m.trim())
+          .filter(Boolean),
+      ]),
+    ];
+    let lastError: unknown;
+    for (const model of models) {
+      try {
+        const data = (await post(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+          { "x-goog-api-key": process.env.GEMINI_API_KEY! },
+          {
+            systemInstruction: { parts: [{ text: system }] },
+            contents: [{ role: "user", parts: [{ text: user }] }],
+            generationConfig: { temperature: 0.2, responseMimeType: "application/json" },
+          },
+          [1500, 0]
+        )) as { candidates?: { content?: { parts?: { text?: string; thought?: boolean }[] } }[] };
+        return (
+          data.candidates?.[0]?.content?.parts
+            ?.filter((p) => !p.thought)
+            .map((p) => p.text ?? "")
+            .join("") ?? ""
+        );
+      } catch (e) {
+        lastError = e;
+        if (!(e instanceof ApiError) || ![404, 429, 500, 502, 503, 504].includes(e.status)) throw e;
       }
-    )) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
-    return data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
+    }
+    throw lastError;
   }
   if (provider === "anthropic") {
     const data = (await post(
