@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@libsql/client": "^0.15.0",
+    "@vercel/oidc": "^4.0.9",
     "next": "^16.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

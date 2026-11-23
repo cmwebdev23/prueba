@@ -1,8 +1,11 @@
+import { getVercelOidcToken } from "@vercel/oidc";
 import type { Provider } from "./types";
 
 /** Proveedor de IA disponible según las variables de entorno (sin clave → modo simulado). */
 export function availableProvider(): Provider {
   if (process.env.AI_GATEWAY_API_KEY) return "gateway";
+  // Desplegada en Vercel: AI Gateway se autentica con el token OIDC del proyecto, sin clave que guardar.
+  if (process.env.VERCEL && process.env.AI_GATEWAY_DISABLED !== "1") return "gateway";
   if (process.env.GEMINI_API_KEY) return "gemini";
   if (process.env.ANTHROPIC_API_KEY) return "anthropic";
   if (process.env.OPENAI_API_KEY) return "openai";
@@ -71,7 +74,9 @@ async function callText(provider: Exclude<Provider, "mock">, system: string, use
   const base = gateway
     ? "https://ai-gateway.vercel.sh/v1"
     : (process.env.OPENAI_BASE_URL || "https://api.openai.com/v1").replace(/\/$/, "");
-  const key = gateway ? process.env.AI_GATEWAY_API_KEY : process.env.OPENAI_API_KEY;
+  const key = gateway
+    ? process.env.AI_GATEWAY_API_KEY || (await getVercelOidcToken())
+    : process.env.OPENAI_API_KEY;
   const data = (await post(
     `${base}/chat/completions`,
     { authorization: `Bearer ${key}` },
