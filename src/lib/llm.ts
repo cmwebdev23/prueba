@@ -15,9 +15,9 @@ export function availableProvider(): Provider {
 export function providerLabel(p: Provider): string {
   switch (p) {
     case "gateway":
-      return `${process.env.AI_GATEWAY_MODEL || "google/gemini-2.5-flash"} vía Vercel AI Gateway`;
+      return `${process.env.AI_GATEWAY_MODEL || "google/gemini-3.8-flash"} vía Vercel AI Gateway`;
     case "gemini":
-      return `Gemini (${process.env.GEMINI_MODEL || "gemini-2.5-flash"})`;
+      return `Gemini (${process.env.GEMINI_MODEL || "gemini-3.8-flash"})`;
     case "anthropic":
       return `Claude (${process.env.ANTHROPIC_MODEL || "claude-haiku-4-5"})`;
     case "openai":
@@ -43,7 +43,7 @@ async function post(url: string, headers: Record<string, string>, body: unknown)
 
 async function callText(provider: Exclude<Provider, "mock">, system: string, user: string): Promise<string> {
   if (provider === "gemini") {
-    const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+    const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
     const data = (await post(
       `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
       { "x-goog-api-key": process.env.GEMINI_API_KEY! },
@@ -82,7 +82,7 @@ async function callText(provider: Exclude<Provider, "mock">, system: string, use
     { authorization: `Bearer ${key}` },
     {
       model: gateway
-        ? process.env.AI_GATEWAY_MODEL || "google/gemini-2.5-flash"
+        ? process.env.AI_GATEWAY_MODEL || "google/gemini-3.8-flash"
         : process.env.OPENAI_MODEL || "llama-3.3-70b-versatile",
       temperature: 0.2,
       response_format: { type: "json_object" },
