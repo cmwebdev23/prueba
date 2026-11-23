@@ -8,19 +8,27 @@ import { createClient, type Client, type InValue } from "@libsql/client";
 let client: Client | null = null;
 let ready: Promise<void> | null = null;
 
+/** Busca la variable aunque la integración de Vercel le haya puesto un prefijo (p. ej. STORAGE_TURSO_DATABASE_URL). */
+function env(suffix: string): string | undefined {
+  if (process.env[suffix]) return process.env[suffix];
+  const key = Object.keys(process.env).find((k) => k.endsWith(`_${suffix}`) && process.env[k]);
+  return key ? process.env[key] : undefined;
+}
+
 export function dbUrl(): string {
-  if (process.env.TURSO_DATABASE_URL) return process.env.TURSO_DATABASE_URL;
+  const url = env("TURSO_DATABASE_URL");
+  if (url) return url;
   // En Vercel sin Turso solo se puede escribir en /tmp (efímero, solo para no romper la demo).
   return process.env.VERCEL ? "file:/tmp/agents.db" : "file:local.db";
 }
 
 export function usingRemoteDb(): boolean {
-  return Boolean(process.env.TURSO_DATABASE_URL);
+  return Boolean(env("TURSO_DATABASE_URL"));
 }
 
 function getClient(): Client {
   if (!client) {
-    client = createClient({ url: dbUrl(), authToken: process.env.TURSO_AUTH_TOKEN || undefined });
+    client = createClient({ url: dbUrl(), authToken: env("TURSO_AUTH_TOKEN") });
   }
   return client;
 }

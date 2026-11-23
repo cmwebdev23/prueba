@@ -2,7 +2,7 @@ export type AgentName = "orchestrator" | "develop" | "testing";
 export type AgentStatus = "idle" | "working" | "waiting" | "done" | "error";
 export type RunStatus = "planning" | "working" | "done" | "partial" | "failed";
 export type TaskStatus = "pending" | "developing" | "testing" | "changes_requested" | "passed" | "failed";
-export type Provider = "gemini" | "anthropic" | "openai" | "mock";
+export type Provider = "gateway" | "gemini" | "anthropic" | "openai" | "mock";
 
 export type Check =
   | { type: "file_exists"; path: string }

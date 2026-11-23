@@ -2,6 +2,7 @@ import type { Provider } from "./types";
 
 /** Proveedor de IA disponible según las variables de entorno (sin clave → modo simulado). */
 export function availableProvider(): Provider {
+  if (process.env.AI_GATEWAY_API_KEY) return "gateway";
   if (process.env.GEMINI_API_KEY) return "gemini";
   if (process.env.ANTHROPIC_API_KEY) return "anthropic";
   if (process.env.OPENAI_API_KEY) return "openai";
@@ -10,6 +11,8 @@ export function availableProvider(): Provider {
 
 export function providerLabel(p: Provider): string {
   switch (p) {
+    case "gateway":
+      return `${process.env.AI_GATEWAY_MODEL || "google/gemini-2.5-flash"} vía Vercel AI Gateway`;
     case "gemini":
       return `Gemini (${process.env.GEMINI_MODEL || "gemini-2.5-flash"})`;
     case "anthropic":
@@ -63,12 +66,19 @@ async function callText(provider: Exclude<Provider, "mock">, system: string, use
     )) as { content?: { type: string; text?: string }[] };
     return data.content?.filter((c) => c.type === "text").map((c) => c.text ?? "").join("") ?? "";
   }
-  const base = (process.env.OPENAI_BASE_URL || "https://api.openai.com/v1").replace(/\/$/, "");
+  // API compatible con OpenAI: Vercel AI Gateway, Groq, OpenAI…
+  const gateway = provider === "gateway";
+  const base = gateway
+    ? "https://ai-gateway.vercel.sh/v1"
+    : (process.env.OPENAI_BASE_URL || "https://api.openai.com/v1").replace(/\/$/, "");
+  const key = gateway ? process.env.AI_GATEWAY_API_KEY : process.env.OPENAI_API_KEY;
   const data = (await post(
     `${base}/chat/completions`,
-    { authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
+    { authorization: `Bearer ${key}` },
     {
-      model: process.env.OPENAI_MODEL || "llama-3.3-70b-versatile",
+      model: gateway
+        ? process.env.AI_GATEWAY_MODEL || "google/gemini-2.5-flash"
+        : process.env.OPENAI_MODEL || "llama-3.3-70b-versatile",
       temperature: 0.2,
       response_format: { type: "json_object" },
       messages: [

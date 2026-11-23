@@ -32,7 +32,7 @@ src/lib/agents/develop.ts
 src/lib/agents/testing.ts
 src/lib/agents/checks.ts     comprobaciones automáticas de Testing
 src/lib/agents/mock.ts       agentes simulados
-src/lib/llm.ts               Gemini / Claude / API compatible con OpenAI (fetch, sin SDK)
+src/lib/llm.ts               Vercel AI Gateway / Gemini / Claude / API compatible con OpenAI (fetch, sin SDK)
 src/lib/db.ts, store.ts      Turso (libSQL) y acceso a datos
 src/app/runs/[id]/RunDashboard.tsx   panel en directo
 src/proxy.ts                 usuario y contraseña opcionales
@@ -49,10 +49,10 @@ npm run dev
 ## Publicación gratuita
 
 1. **Base de datos (Turso, gratis)**: en [turso.tech](https://turso.tech) crea una base de datos y copia la URL (`libsql://…`) y un token. Las tablas se crean solas en el primer uso.
-2. **IA (gratis)**: crea una clave en [Google AI Studio](https://aistudio.google.com/apikey) (`GEMINI_API_KEY`) o en [Groq](https://console.groq.com) (`OPENAI_API_KEY` + `OPENAI_BASE_URL=https://api.groq.com/openai/v1`).
+2. **IA (gratis)**: una clave de [Vercel AI Gateway](https://vercel.com/ai-gateway) (`AI_GATEWAY_API_KEY`, con crédito gratuito mensual), o una clave en [Google AI Studio](https://aistudio.google.com/apikey) (`GEMINI_API_KEY`) o en [Groq](https://console.groq.com) (`OPENAI_API_KEY` + `OPENAI_BASE_URL=https://api.groq.com/openai/v1`).
 3. **Vercel**: importa el repositorio de GitHub y añade en *Settings → Environment Variables*:
    - `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`
-   - `GEMINI_API_KEY` (o la alternativa)
+   - `AI_GATEWAY_API_KEY` o `GEMINI_API_KEY` (o la alternativa)
    - `BASIC_AUTH_USER`, `BASIC_AUTH_PASSWORD` (opcional, para que nadie más gaste la cuota)
 4. Despliega. Ninguna clave se sube al repositorio (`.env*` está en `.gitignore`).
 
