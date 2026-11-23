@@ -3,7 +3,7 @@ import { query, usingRemoteDb } from "@/lib/db";
 import { availableProvider, callJson } from "@/lib/llm";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 /** Diagnóstico: comprueba la base de datos y (con ?ai=1) una llamada real al proveedor de IA. */
 export async function GET(req: Request) {

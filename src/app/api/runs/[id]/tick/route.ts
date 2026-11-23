@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { tick } from "@/lib/engine";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 /** Avanza la ejecución un paso (una llamada a un agente). La interfaz lo llama en bucle. */
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {

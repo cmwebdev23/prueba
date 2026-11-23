@@ -27,7 +27,7 @@ export function providerLabel(p: Provider): string {
   }
 }
 
-const TIMEOUT_MS = 55_000;
+const TIMEOUT_MS = 90_000;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -94,6 +94,7 @@ async function callText(provider: Exclude<Provider, "mock">, system: string, use
         );
       } catch (e) {
         lastError = e;
+        console.warn(`[gemini] ${model} falló: ${e instanceof Error ? e.message.slice(0, 160) : e}`);
         if (!(e instanceof ApiError) || ![404, 429, 500, 502, 503, 504].includes(e.status)) throw e;
       }
     }

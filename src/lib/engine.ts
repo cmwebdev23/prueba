@@ -38,7 +38,7 @@ export async function tick(runId: string): Promise<TickResult> {
   const run = await getRun(runId);
   if (!run) return { status: "not_found" };
   if (["done", "partial", "failed"].includes(run.status)) return { status: run.status };
-  if (!(await acquireLock(runId, 90_000))) return { status: "busy" };
+  if (!(await acquireLock(runId, 300_000))) return { status: "busy" };
 
   try {
     if (run.status === "planning") await planStep(run);
