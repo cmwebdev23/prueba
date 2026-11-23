@@ -17,7 +17,7 @@ export function providerLabel(p: Provider): string {
     case "gateway":
       return `${process.env.AI_GATEWAY_MODEL || "google/gemini-3.8-flash"} vía Vercel AI Gateway`;
     case "gemini":
-      return `Gemini (${process.env.GEMINI_MODEL || "gemini-3.8-flash"})`;
+      return `Gemini (${process.env.GEMINI_MODEL || "gemini-flash-latest"})`;
     case "anthropic":
       return `Claude (${process.env.ANTHROPIC_MODEL || "claude-haiku-4-5"})`;
     case "openai":
@@ -41,7 +41,8 @@ async function post(
   url: string,
   headers: Record<string, string>,
   body: unknown,
-  delays = [2000, 5000, 0]
+  delays = [2000, 5000, 0],
+  timeoutMs = TIMEOUT_MS
 ): Promise<unknown> {
   // Reintenta los errores temporales (saturación o límite de peticiones del plan gratuito).
   for (let attempt = 0; ; attempt++) {
@@ -49,7 +50,7 @@ async function post(
       method: "POST",
       headers: { "content-type": "application/json", ...headers },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+      signal: AbortSignal.timeout(timeoutMs),
     });
     const text = await res.text();
     if (res.ok) return JSON.parse(text);
@@ -66,8 +67,8 @@ async function callText(provider: Exclude<Provider, "mock">, system: string, use
     // Si un modelo está saturado o no disponible, se prueba el siguiente.
     const models = [
       ...new Set([
-        process.env.GEMINI_MODEL || "gemini-3.8-flash",
-        ...(process.env.GEMINI_FALLBACK_MODELS || "gemini-3.7-flash,gemini-3.5-flash,gemini-flash-latest,gemini-2.5-flash")
+        process.env.GEMINI_MODEL || "gemini-flash-latest",
+        ...(process.env.GEMINI_FALLBACK_MODELS || "gemini-3.5-flash,gemini-2.5-flash,gemini-flash-lite-latest")
           .split(",")
           .map((m) => m.trim())
           .filter(Boolean),
@@ -84,7 +85,8 @@ async function callText(provider: Exclude<Provider, "mock">, system: string, use
             contents: [{ role: "user", parts: [{ text: user }] }],
             generationConfig: { temperature: 0.2, responseMimeType: "application/json" },
           },
-          [1500, 0]
+          [1500, 0],
+          45_000
         )) as { candidates?: { content?: { parts?: { text?: string; thought?: boolean }[] } }[] };
         return (
           data.candidates?.[0]?.content?.parts
@@ -95,7 +97,8 @@ async function callText(provider: Exclude<Provider, "mock">, system: string, use
       } catch (e) {
         lastError = e;
         console.warn(`[gemini] ${model} falló: ${e instanceof Error ? e.message.slice(0, 160) : e}`);
-        if (!(e instanceof ApiError) || ![404, 429, 500, 502, 503, 504].includes(e.status)) throw e;
+        const timeout = e instanceof Error && e.name === "TimeoutError";
+        if (!timeout && (!(e instanceof ApiError) || ![404, 429, 500, 502, 503, 504].includes(e.status))) throw e;
       }
     }
     throw lastError;
