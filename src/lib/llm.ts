@@ -29,16 +29,26 @@ export function providerLabel(p: Provider): string {
 
 const TIMEOUT_MS = 55_000;
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 async function post(url: string, headers: Record<string, string>, body: unknown): Promise<unknown> {
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "content-type": "application/json", ...headers },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(TIMEOUT_MS),
-  });
-  const text = await res.text();
-  if (!res.ok) throw new Error(`La API de IA respondió ${res.status}: ${text.slice(0, 300)}`);
-  return JSON.parse(text);
+  // Reintenta los errores temporales (saturación o límite de peticiones del plan gratuito).
+  const delays = [2000, 5000, 0];
+  for (let attempt = 0; ; attempt++) {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json", ...headers },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    const text = await res.text();
+    if (res.ok) return JSON.parse(text);
+    const transient = res.status === 429 || res.status >= 500;
+    if (!transient || attempt >= delays.length - 1) {
+      throw new Error(`La API de IA respondió ${res.status}: ${text.slice(0, 300)}`);
+    }
+    await sleep(delays[attempt]);
+  }
 }
 
 async function callText(provider: Exclude<Provider, "mock">, system: string, user: string): Promise<string> {
