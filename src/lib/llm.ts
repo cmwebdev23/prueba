@@ -4,11 +4,11 @@ import type { Provider } from "./types";
 /** Proveedor de IA disponible según las variables de entorno (sin clave → modo simulado). */
 export function availableProvider(): Provider {
   if (process.env.AI_GATEWAY_API_KEY) return "gateway";
-  // Desplegada en Vercel: AI Gateway se autentica con el token OIDC del proyecto, sin clave que guardar.
-  if (process.env.VERCEL && process.env.AI_GATEWAY_DISABLED !== "1") return "gateway";
   if (process.env.GEMINI_API_KEY) return "gemini";
   if (process.env.ANTHROPIC_API_KEY) return "anthropic";
   if (process.env.OPENAI_API_KEY) return "openai";
+  // En Vercel, AI Gateway puede autenticarse con el token OIDC del proyecto (requiere tarjeta en la cuenta).
+  if (process.env.VERCEL && process.env.AI_GATEWAY_OIDC === "1") return "gateway";
   return "mock";
 }
 
