@@ -17,7 +17,7 @@ export function providerLabel(p: Provider): string {
     case "gateway":
       return `${process.env.AI_GATEWAY_MODEL || "google/gemini-3.8-flash"} vía Vercel AI Gateway`;
     case "gemini":
-      return `Gemini (${process.env.GEMINI_MODEL || "gemini-flash-latest"})`;
+      return `Gemini (${process.env.GEMINI_MODEL || "gemini-3.5-flash"})`;
     case "anthropic":
       return `Claude (${process.env.ANTHROPIC_MODEL || "claude-haiku-4-5"})`;
     case "openai":
@@ -67,8 +67,8 @@ async function callText(provider: Exclude<Provider, "mock">, system: string, use
     // Si un modelo está saturado o no disponible, se prueba el siguiente.
     const models = [
       ...new Set([
-        process.env.GEMINI_MODEL || "gemini-flash-latest",
-        ...(process.env.GEMINI_FALLBACK_MODELS || "gemini-3.5-flash,gemini-2.5-flash,gemini-flash-lite-latest")
+        process.env.GEMINI_MODEL || "gemini-3.5-flash",
+        ...(process.env.GEMINI_FALLBACK_MODELS || "gemini-2.5-flash,gemini-flash-latest,gemini-flash-lite-latest")
           .split(",")
           .map((m) => m.trim())
           .filter(Boolean),
